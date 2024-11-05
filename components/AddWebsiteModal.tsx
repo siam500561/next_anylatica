@@ -29,9 +29,6 @@ export function AddWebsiteModal({ isOpen, onClose }: AddWebsiteModalProps) {
       await addWebsite({
         name,
         url,
-        views: 0,
-        createdAt: Date.now(),
-        apiKey: `key_${Math.random().toString(36).substring(2)}`,
       });
       setName("");
       setUrl("");

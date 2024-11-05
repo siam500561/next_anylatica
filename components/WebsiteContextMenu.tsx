@@ -17,6 +17,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -43,7 +44,7 @@ export function WebsiteContextMenu({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteWebsite({ id: website._id });
+      await deleteWebsite({ id: website._id as Id<"websites"> });
       toast.success("Website deleted successfully");
       setShowDeleteAlert(false);
     } catch {
