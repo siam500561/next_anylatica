@@ -13,6 +13,8 @@
     "@dnd-kit/modifiers": "^7.0.0",
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@fingerprintjs/fingerprintjs": "^4.5.1",
+    "@iamsiam/analytics": "^1.0.2",
     "@radix-ui/react-alert-dialog": "^1.1.2",
     "@radix-ui/react-context-menu": "^2.2.2",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -29,6 +31,7 @@
     "next-themes": "^0.4.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "request-ip": "^3.3.0",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7"

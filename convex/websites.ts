@@ -1,25 +1,28 @@
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import { generateApiKey } from "./utils";
 
 export const create = mutation({
   args: {
     name: v.string(),
     url: v.string(),
-    views: v.number(),
-    createdAt: v.number(),
-    apiKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const websites = await ctx.db.query("websites").collect();
-    const position = websites.length;
+    const position = await ctx.db
+      .query("websites")
+      .collect()
+      .then((websites) => websites.length);
 
-    // Use args.apiKey instead of generating a new one since it's provided
-
-    return await ctx.db.insert("websites", {
-      ...args,
+    const website = await ctx.db.insert("websites", {
+      name: args.name,
+      url: args.url,
+      apiKey: generateApiKey(),
+      createdAt: Date.now(),
+      views: 0,
       position,
     });
+
+    return website;
   },
 });
 
@@ -46,13 +49,12 @@ export const getStats = query({
   handler: async (ctx, args) => {
     const website = await ctx.db.get(args.websiteId);
 
-    // Return null if website doesn't exist instead of throwing an error
     if (!website) {
       return null;
     }
     const views = await ctx.db
       .query("visitors")
-      .withIndex("by_website_visitor")
+      .withIndex("by_website")
       .filter((q) => q.eq(q.field("websiteId"), args.websiteId))
       .collect();
 
@@ -65,18 +67,20 @@ export const getStats = query({
 });
 
 export const getDailyViews = query({
-  args: { websiteId: v.string() },
+  args: { websiteId: v.id("websites") },
   handler: async (ctx, args) => {
     const visitors = await ctx.db
       .query("visitors")
-      .withIndex("by_website_visitor")
+      .withIndex("by_website")
       .filter((q) => q.eq(q.field("websiteId"), args.websiteId))
       .collect();
 
     // Group visitors by date
     const dailyViews: { [key: string]: number } = {};
     visitors.forEach((visitor) => {
-      const date = new Date(visitor.timestamp).toISOString().split("T")[0];
+      const date = new Date(visitor.metadata.timestamp)
+        .toISOString()
+        .split("T")[0];
       dailyViews[date] = (dailyViews[date] || 0) + 1;
     });
 
@@ -85,12 +89,12 @@ export const getDailyViews = query({
 });
 
 export const deleteWebsite = mutation({
-  args: { id: v.string() },
+  args: { id: v.id("websites") },
   handler: async (ctx, args) => {
     // Delete all associated visitors first
     const visitors = await ctx.db
       .query("visitors")
-      .withIndex("by_website_visitor")
+      .withIndex("by_website")
       .filter((q) => q.eq(q.field("websiteId"), args.id))
       .collect();
 
@@ -99,17 +103,17 @@ export const deleteWebsite = mutation({
     }
 
     // Delete the website
-    await ctx.db.delete(args.id as Id<"websites">);
+    await ctx.db.delete(args.id);
   },
 });
 
 export const update = mutation({
   args: {
-    id: v.string(),
+    id: v.id("websites"),
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id as Id<"websites">, {
+    await ctx.db.patch(args.id, {
       name: args.name,
     });
   },
@@ -117,11 +121,11 @@ export const update = mutation({
 
 export const updatePosition = mutation({
   args: {
-    id: v.string(),
+    id: v.id("websites"),
     newPosition: v.number(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id as Id<"websites">, {
+    await ctx.db.patch(args.id, {
       position: args.newPosition,
     });
   },
@@ -131,14 +135,14 @@ export const updatePositions = mutation({
   args: {
     updates: v.array(
       v.object({
-        id: v.string(),
+        id: v.id("websites"),
         position: v.number(),
       })
     ),
   },
   handler: async (ctx, args) => {
     for (const update of args.updates) {
-      await ctx.db.patch(update.id as Id<"websites">, {
+      await ctx.db.patch(update.id, {
         position: update.position,
       });
     }

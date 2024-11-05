@@ -10,6 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -54,7 +55,7 @@ export function WebsiteFormModal({
     try {
       if (isEditing) {
         await updateWebsite({
-          id: website._id,
+          id: website._id as Id<"websites">,
           name,
         });
         toast.success("Website updated successfully");
@@ -62,9 +63,6 @@ export function WebsiteFormModal({
         await createWebsite({
           name,
           url,
-          views: 0,
-          createdAt: Date.now(),
-          apiKey: `key_${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
         });
         toast.success("Website created successfully");
       }

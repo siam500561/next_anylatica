@@ -1,83 +1,80 @@
-import { api } from "@/convex/_generated/api";
-import { ConvexHttpClient } from "convex/browser";
+import { useEffect } from "react";
 
-export class Analytics {
-  private apiKey: string;
-  private convex: ConvexHttpClient;
-  private storageKey: string;
+interface AnalyticsProps {
+  apiKey: string;
+  apiUrl: string;
+}
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-    this.storageKey = `visitor_id_${apiKey}`; // Unique storage key per website
-  }
+export function Analytics({ apiKey, apiUrl }: AnalyticsProps) {
+  useEffect(() => {
+    const storageKey = `visitor_id_${apiKey}`;
 
-  private generateVisitorId() {
-    return "visitor_" + Math.random().toString(36).substr(2, 9);
-  }
+    const generateVisitorId = () =>
+      "visitor_" + Math.random().toString(36).substr(2, 9);
 
-  private getVisitorId() {
-    if (typeof window === "undefined") return this.generateVisitorId();
+    const getCookie = (name: string): string | null => {
+      if (typeof document === "undefined") return null;
+      const match = document.cookie.match(
+        new RegExp("(^| )" + name + "=([^;]+)")
+      );
+      return match ? match[2] : null;
+    };
 
-    // Try to get from localStorage first
-    let visitorId = localStorage.getItem(this.storageKey);
+    const storeVisitorId = (visitorId: string) => {
+      if (typeof window === "undefined") return;
+      localStorage.setItem(storageKey, visitorId);
+      const oneYear = 365 * 24 * 60 * 60 * 1000;
+      const expires = new Date(Date.now() + oneYear).toUTCString();
+      document.cookie = `${storageKey}=${visitorId};expires=${expires};path=/`;
+    };
 
-    if (!visitorId) {
-      // If not in localStorage, try to get from cookie
-      visitorId = this.getCookie(this.storageKey);
-    }
+    const getVisitorId = () => {
+      if (typeof window === "undefined") return null;
 
-    if (!visitorId) {
-      // If no ID exists anywhere, generate a new one
-      visitorId = this.generateVisitorId();
-      // Store in both localStorage and cookie for persistence
-      this.storeVisitorId(visitorId);
-    }
-
-    return visitorId;
-  }
-
-  private getCookie(name: string): string | null {
-    if (typeof document === "undefined") return null;
-    const match = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)")
-    );
-    return match ? match[2] : null;
-  }
-
-  private storeVisitorId(visitorId: string) {
-    // Store in localStorage
-    localStorage.setItem(this.storageKey, visitorId);
-
-    // Store in cookie with 1-year expiry
-    const oneYear = 365 * 24 * 60 * 60 * 1000;
-    const expires = new Date(Date.now() + oneYear).toUTCString();
-    document.cookie = `${this.storageKey}=${visitorId};expires=${expires};path=/`;
-  }
-
-  async trackPageView() {
-    try {
-      const visitorId = this.getVisitorId();
-      const userAgent =
-        typeof window !== "undefined" ? window.navigator.userAgent : "Server";
-
-      const result = await this.convex.mutation(api.visitors.trackVisit, {
-        apiKey: this.apiKey,
-        visitorId,
-        userAgent,
-      });
-      return result;
-    } catch (error: unknown) {
-      // Don't throw error if no websites exist yet
-      if (
-        error instanceof Error &&
-        error.message === "No websites registered yet"
-      ) {
-        console.log("No websites registered yet");
-        return null;
+      let visitorId = localStorage.getItem(storageKey);
+      if (!visitorId) visitorId = getCookie(storageKey);
+      if (!visitorId) {
+        visitorId = generateVisitorId();
+        storeVisitorId(visitorId);
       }
-      console.error("Error tracking page view:", error);
-      throw error;
-    }
-  }
+      return visitorId;
+    };
+
+    const trackPageView = async () => {
+      try {
+        const visitorId = getVisitorId();
+        if (!visitorId) return;
+
+        const userAgent =
+          typeof window !== "undefined" ? window.navigator.userAgent : "Server";
+
+        const response = await fetch(`${apiUrl}/api/track`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            visitorId,
+            userAgent,
+            isNewVisitor: !localStorage.getItem(`visited_${apiKey}`),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to track page view");
+        }
+
+        localStorage.setItem(`visited_${apiKey}`, "true");
+        return await response.json();
+      } catch (error: unknown) {
+        console.error("Error tracking page view:", error);
+        throw error;
+      }
+    };
+
+    trackPageView();
+  }, [apiKey, apiUrl]);
+
+  return null;
 }

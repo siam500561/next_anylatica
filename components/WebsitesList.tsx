@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/convex/_generated/api";
+import { Doc } from "@/convex/_generated/dataModel";
 import {
   closestCenter,
   DndContext,
@@ -26,18 +27,8 @@ import { Button } from "./ui/button";
 import { WebsiteFormModal } from "./WebsiteFormModal";
 import { WebsitesListSkeleton } from "./WebsitesListSkeleton";
 
-interface Website {
-  _id: string;
-  name: string;
-  url: string;
-  apiKey: string;
-  views: number;
-  createdAt: number;
-  position: number;
-}
-
 interface WebsitesListProps {
-  websites: Website[] | undefined;
+  websites: Doc<"websites">[] | undefined;
   isLoading: boolean;
 }
 
@@ -45,7 +36,7 @@ export function WebsitesList({
   websites: initialWebsites,
   isLoading,
 }: WebsitesListProps) {
-  const [websites, setWebsites] = useState<Website[] | undefined>(
+  const [websites, setWebsites] = useState<Doc<"websites">[] | undefined>(
     initialWebsites
   );
   const [isModalOpen, setIsModalOpen] = useState(false);

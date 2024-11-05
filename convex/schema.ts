@@ -9,14 +9,19 @@ export default defineSchema({
     createdAt: v.number(),
     views: v.number(),
     position: v.number(),
-  }),
+  }).index("by_api_key", ["apiKey"]),
 
   visitors: defineTable({
+    websiteId: v.id("websites"),
     visitorId: v.string(),
     userAgent: v.string(),
-    timestamp: v.number(),
-    websiteId: v.string(),
+    firstVisit: v.string(),
+    lastVisit: v.string(),
+    visitCount: v.number(),
+    metadata: v.object({
+      timestamp: v.string(),
+    }),
   })
-    .index("by_website_visitor", ["websiteId", "visitorId"])
-    .index("by_website_timestamp", ["websiteId", "timestamp"]),
+    .index("by_website", ["websiteId"])
+    .index("by_visitor_website", ["websiteId", "visitorId"]),
 });

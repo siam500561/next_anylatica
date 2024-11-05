@@ -1,6 +1,7 @@
 "use client";
 
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { format, subDays } from "date-fns";
 import {
@@ -17,7 +18,9 @@ interface ViewsChartProps {
 }
 
 export function ViewsChart({ websiteId }: ViewsChartProps) {
-  const viewsData = useQuery(api.websites.getDailyViews, { websiteId });
+  const viewsData = useQuery(api.websites.getDailyViews, {
+    websiteId: websiteId as Id<"websites">,
+  });
 
   if (!viewsData) {
     return (

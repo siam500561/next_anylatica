@@ -27,14 +27,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await client.mutation(api.visitors.trackVisit, {
-      apiKey,
-      visitorId: "visitor_" + Math.random().toString(36).substr(2, 9),
-      userAgent: req.headers.get("user-agent") || "Unknown",
-    });
+    const body = await req.json();
+    const { visitorId, userAgent, isNewVisitor } = body;
 
+    // Only track the visit if it's a new visitor
+    if (isNewVisitor) {
+      const result = await client.mutation(api.visitors.trackVisit, {
+        apiKey,
+        visitorId,
+        userAgent: userAgent || "Unknown",
+        metadata: {
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      return NextResponse.json(
+        { success: true, result },
+        {
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+        }
+      );
+    }
+
+    // For existing visitors, just return success without tracking
     return NextResponse.json(
-      { success: true, result },
+      { success: true, existing: true },
       {
         headers: {
           "Access-Control-Allow-Origin": "*",
