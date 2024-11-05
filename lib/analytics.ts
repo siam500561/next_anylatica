@@ -48,18 +48,21 @@ export function Analytics({ apiKey, apiUrl }: AnalyticsProps) {
         const userAgent =
           typeof window !== "undefined" ? window.navigator.userAgent : "Server";
 
-        const response = await fetch(`${apiUrl}/api/track`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            visitorId,
-            userAgent,
-            isNewVisitor: !localStorage.getItem(`visited_${apiKey}`),
-          }),
-        });
+        const response = await fetch(
+          `${apiUrl.replace(/\/+$/, "")}/api/track`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              visitorId,
+              userAgent,
+              isNewVisitor: !localStorage.getItem(`visited_${apiKey}`),
+            }),
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to track page view");

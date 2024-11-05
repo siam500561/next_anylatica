@@ -4,18 +4,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 const client = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: NextRequest) {
-  // Handle CORS
-  if (req.method === "OPTIONS") {
-    return new NextResponse(null, {
-      status: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
-  }
   try {
     const authHeader = req.headers.get("authorization");
     const apiKey = authHeader?.split(" ")[1];
@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
       return NextResponse.json(
         { error: "API key is required" },
-        { status: 401 }
+        {
+          status: 401,
+          headers: corsHeaders,
+        }
       );
     }
 
@@ -43,26 +46,14 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json(
         { success: true, result },
-        {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-          },
-        }
+        { headers: corsHeaders }
       );
     }
 
     // For existing visitors, just return success without tracking
     return NextResponse.json(
       { success: true, existing: true },
-      {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-      }
+      { headers: corsHeaders }
     );
   } catch (error) {
     console.error("Error tracking view:", error);
@@ -72,16 +63,10 @@ export async function POST(req: NextRequest) {
       errorMessage === "No websites registered yet" ? 404 : 500;
 
     return NextResponse.json(
-      {
-        error: errorMessage,
-      },
+      { error: errorMessage },
       {
         status: statusCode,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
+        headers: corsHeaders,
       }
     );
   }
